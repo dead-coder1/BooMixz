@@ -14,30 +14,48 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - name: Fix project structure
+      - name: Build BooMixz with your index.html
         run: |
-          flutter create . --platforms=android --project-name apple_music_clone --org com.example
+          flutter create . --platforms=android --project-name boomixz --org com.boomixz.app
+          flutter pub add webview_flutter
+          mkdir -p assets
+          cp index.html assets/index.html
+          cat > pubspec.yaml << 'EOF'
+          name: boomixz
+          publish_to: 'none'
+          version: 1.0.0+1
+          environment:
+            sdk: '>=3.0.0 <4.0.0'
+          dependencies:
+            flutter:
+              sdk: flutter
+            webview_flutter: ^4.4.2
+          flutter:
+            uses-material-design: true
+            assets:
+              - assets/index.html
+          EOF
           cat > lib/main.dart << 'EOF'
           import 'package:flutter/material.dart';
+          import 'package:webview_flutter/webview_flutter.dart';
           void main() => runApp(const MyApp());
           class MyApp extends StatelessWidget {
             const MyApp({super.key});
             @override
             Widget build(BuildContext context) {
+              final controller = WebViewController()
+                ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                ..loadFlutterAsset('assets/index.html');
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
-                home: Scaffold(
-                  backgroundColor: Colors.black,
-                  appBar: AppBar(title: const Text('Apple Music Clone'), backgroundColor: Colors.red, centerTitle: true),
-                  body: const Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(Icons.music_note, size: 100, color: Colors.red), SizedBox(height: 20), Text('Ek gaana baj raha hai...', style: TextStyle(color: Colors.white, fontSize: 20))])),
-                ),
+                home: Scaffold(body: SafeArea(child: WebViewWidget(controller: controller))),
               );
             }
           }
           EOF
-      - run: flutter pub get
-      - run: flutter build apk --release
+          flutter pub get
+          flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
-          name: app-release-apk
+          name: BooMixz-APK
           path: build/app/outputs/flutter-apk/app-release.apk
