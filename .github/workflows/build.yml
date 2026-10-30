@@ -11,19 +11,20 @@ jobs:
       - uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
       - name: Build APK
         run: |
           rm -rf android www node_modules package-lock.json
           mkdir -p www
-          cp index.html www/index.html
-          npm init -y
-          npm install @capacitor/core @capacitor/cli @capacitor/android
-          npx cap init Booo com.booo.app --web-dir=www
+          cp index.html www/index.html || cp ./index.html www/index.html
+          echo '{"name":"booomixz","type":"module"}' > package.json
+          npm i @capacitor/core @capacitor/cli @capacitor/android
+          npx cap init BooMixz com.boomixz.app --web-dir=www
           npx cap add android
+          npx cap copy android
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          ./gradlew assembleDebug --no-daemon
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
