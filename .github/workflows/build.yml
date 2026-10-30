@@ -14,41 +14,44 @@ jobs:
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - name: Build BooMixz with your index.html
+      - name: Build BooMixz
         run: |
           flutter create . --platforms=android --project-name boomixz --org com.boomixz.app
           flutter pub add webview_flutter
           mkdir -p assets
           cp index.html assets/index.html
-          cat > pubspec.yaml << 'EOF'
-          name: boomixz
-          publish_to: 'none'
-          version: 1.0.0+1
-          environment:
-            sdk: '>=3.0.0 <4.0.0'
-          dependencies:
-            flutter:
-              sdk: flutter
-            webview_flutter: ^4.4.2
-          flutter:
-            uses-material-design: true
-            assets:
-              - assets/index.html
-          EOF
           cat > lib/main.dart << 'EOF'
           import 'package:flutter/material.dart';
           import 'package:webview_flutter/webview_flutter.dart';
+          import 'package:flutter/services.dart';
           void main() => runApp(const MyApp());
-          class MyApp extends StatelessWidget {
+          class MyApp extends StatefulWidget {
             const MyApp({super.key});
             @override
-            Widget build(BuildContext context) {
-              final controller = WebViewController()
+            State<MyApp> createState() => _MyAppState();
+          }
+          class _MyAppState extends State<MyApp> {
+            late final WebViewController controller;
+            @override
+            void initState() {
+              super.initState();
+              controller = WebViewController()
                 ..setJavaScriptMode(JavaScriptMode.unrestricted)
-                ..loadFlutterAsset('assets/index.html');
+                ..setBackgroundColor(const Color(0xFF000000));
+              load();
+            }
+            Future<void> load() async {
+              String html = await rootBundle.loadString('assets/index.html');
+              await controller.loadHtmlString(html);
+            }
+            @override
+            Widget build(BuildContext context) {
               return MaterialApp(
                 debugShowCheckedModeBanner: false,
-                home: Scaffold(body: SafeArea(child: WebViewWidget(controller: controller))),
+                home: Scaffold(
+                  backgroundColor: Colors.black,
+                  body: SafeArea(child: WebViewWidget(controller: controller)),
+                ),
               );
             }
           }
@@ -57,5 +60,5 @@ jobs:
           flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
-          name: BooMixz-APK
+          name: BooMixz-APK-FINAL
           path: build/app/outputs/flutter-apk/app-release.apk
